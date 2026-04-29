@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #000000;
+  --color-muted: #f9f9f9;
+  --color-border: #e5e5e5;
+  --color-accent: #111111;
+  
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Outfit', sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-foreground selection:text-background;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-2xl hover:shadow-black/5 hover:-translate-y-1;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-muted;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-foreground/10 rounded-full hover:bg-foreground/20;
+}
+
+/* Dark Mode support (manual class based) */
+.dark {
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --color-muted: #111111;
+  --color-border: #222222;
+  --color-accent: #f9f9f9;
+}
