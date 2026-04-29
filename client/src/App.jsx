@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import TaskBoard from './components/TaskBoard';
 import Calendar from './components/Calendar';
 import Pomodoro from './components/Pomodoro';
 import Progress from './components/Progress';
-import { useTheme } from './context/ThemeContext';
 import { useAuth } from './context/AuthContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import Landing from './pages/Landing';
@@ -15,7 +14,6 @@ import Signup from './pages/Signup';
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [authView, setAuthView] = useState('landing');
-  const { darkMode } = useTheme();
   const { user, loading } = useAuth();
 
   const renderContent = () => {
@@ -40,7 +38,7 @@ function App() {
             </div>
           </div>
         );
-      case 'progress':
+      case 'analytics':
         return (
           <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center">
             <h2 className="text-3xl font-bold mb-4">Advanced Analytics</h2>
