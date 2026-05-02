@@ -1,9 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const { OAuth2Client } = require('google-auth-library');
-
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || 'dummy_client_id');
-
+const axios = require('axios');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
@@ -50,17 +47,22 @@ exports.getMe = async (req, res) => {
 exports.googleLogin = async (req, res) => {
     try {
         const { token } = req.body;
-        const ticket = await client.verifyIdToken({
-            idToken: token,
-            audience: process.env.GOOGLE_CLIENT_ID || 'dummy_client_id',
+        
+        // Use the access_token to fetch user info from Google
+        const googleRes = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${token}` }
         });
         
-        const payload = ticket.getPayload();
-        const { email, name, picture } = payload;
+        const { email, name, picture } = googleRes.data;
         
+        if (!email) {
+            return res.status(400).json({ message: 'Unable to get email from Google' });
+        }
+
         let user = await User.findOne({ email });
         
         if (!user) {
+            // Create a new user with a random password for Google sign-ups
             const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
             user = new User({
                 username: name || email.split('@')[0],
@@ -75,6 +77,6 @@ exports.googleLogin = async (req, res) => {
         res.json({ token: jwtToken, user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar } });
     } catch (err) {
         console.error('Google login error:', err);
-        res.status(401).json({ message: 'Invalid Google token' });
+        res.status(401).json({ message: 'Google authentication failed' });
     }
 };
