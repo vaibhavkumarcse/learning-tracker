@@ -64,8 +64,21 @@ exports.googleLogin = async (req, res) => {
         if (!user) {
             // Create a new user with a random password for Google sign-ups
             const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+            
+            let baseUsername = name || email.split('@')[0];
+            // Remove any spaces or special characters for cleaner usernames (optional but recommended)
+            baseUsername = baseUsername.replace(/\s+/g, '');
+            let username = baseUsername;
+            let counter = 1;
+            
+            // Ensure username uniqueness
+            while (await User.findOne({ username })) {
+                username = `${baseUsername}${counter}`;
+                counter++;
+            }
+
             user = new User({
-                username: name || email.split('@')[0],
+                username,
                 email,
                 password: randomPassword,
                 avatar: picture
