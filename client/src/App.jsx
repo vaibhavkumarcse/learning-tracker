@@ -5,6 +5,7 @@ import TaskBoard from './components/TaskBoard';
 import Calendar from './components/Calendar';
 import Pomodoro from './components/Pomodoro';
 import Progress from './components/Progress';
+import Subjects from './components/Subjects';
 import { useAuth } from './context/AuthContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import Landing from './pages/Landing';
@@ -23,21 +24,7 @@ function App() {
       case 'calendar': return <Calendar />;
       case 'pomodoro': return <Pomodoro />;
       case 'progress': return <Progress />;
-      case 'subjects':
-        return (
-          <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)]">
-            <h2 className="text-3xl font-bold mb-4">Subjects</h2>
-            <p className="text-foreground/60">Manage your learning subjects here.</p>
-            <div className="mt-8 grid grid-cols-2 gap-4 w-full max-w-2xl">
-              {['Mathematics', 'Computer Science', 'Physics', 'History'].map(sub => (
-                <div key={sub} className="p-6 border border-border rounded-2xl hover:border-foreground transition-all cursor-pointer">
-                  <div className="font-bold mb-2">{sub}</div>
-                  <div className="text-sm text-foreground/60">12 Tasks • 4.5h this week</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
+      case 'subjects': return <Subjects />;
       case 'analytics':
         return (
           <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center">
