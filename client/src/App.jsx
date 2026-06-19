@@ -6,6 +6,9 @@ import Calendar from './components/Calendar';
 import Pomodoro from './components/Pomodoro';
 import Progress from './components/Progress';
 import Subjects from './components/Subjects';
+import Goals from './components/Goals';
+import StudyLog from './components/StudyLog';
+import Profile from './components/Profile';
 import { useAuth } from './context/AuthContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import Landing from './pages/Landing';
@@ -22,9 +25,12 @@ function App() {
       case 'dashboard': return <Dashboard />;
       case 'tasks': return <TaskBoard />;
       case 'calendar': return <Calendar />;
+      case 'goals': return <Goals />;
+      case 'studylog': return <StudyLog />;
       case 'pomodoro': return <Pomodoro />;
       case 'progress': return <Progress />;
       case 'subjects': return <Subjects />;
+      case 'profile': return <Profile />;
       case 'analytics':
         return (
           <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] text-center">

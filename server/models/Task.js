@@ -8,7 +8,12 @@ const taskSchema = new mongoose.Schema({
     subject: { type: mongoose.Schema.Types.ObjectId, ref: 'Subject' },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     dueDate: { type: Date },
-    completedAt: { type: Date }
+    completedAt: { type: Date },
+    resources: [{
+        title: { type: String },
+        type: { type: String, enum: ['youtube', 'article', 'course', 'other'], default: 'other' },
+        url: { type: String }
+    }]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Task', taskSchema);

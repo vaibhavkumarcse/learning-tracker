@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, CheckSquare, Calendar, BarChart3, BookOpen, Timer, Zap, Sun, Moon, LogOut } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Calendar, BarChart3, BookOpen, Timer, Zap, Sun, Moon, LogOut, Target, ClipboardList, User } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -12,7 +12,9 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
+    { id: 'goals', label: 'Goals', icon: Target },
     { id: 'subjects', label: 'Subjects', icon: BookOpen },
+    { id: 'studylog', label: 'Study Log', icon: ClipboardList },
     { id: 'pomodoro', label: 'Timer', icon: Timer },
     { id: 'progress', label: 'Progress', icon: BarChart3 },
   ];
@@ -69,15 +71,28 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           </div>
         </button>
 
-        <div className="flex items-center gap-4 px-4 py-3">
+        <div 
+          onClick={() => setActiveTab('profile')}
+          className={`flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer hover:bg-muted/70 transition-all ${
+            activeTab === 'profile' ? 'bg-muted border border-border' : ''
+          }`}
+        >
           <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-lg overflow-hidden border border-border">
-            {user?.username?.charAt(0).toUpperCase() || 'U'}
+            {user?.avatar?.startsWith('http') ? (
+              <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              user?.username?.charAt(0).toUpperCase() || 'U'
+            )}
           </div>
           <div className="flex-1">
             <div className="text-xs font-bold text-foreground/40 uppercase tracking-widest leading-none mb-1">User</div>
             <div className="text-sm font-bold truncate max-w-[100px]">{user?.username}</div>
           </div>
-          <button onClick={logout} className="p-2 hover:bg-muted rounded-xl transition-colors text-foreground/40 hover:text-red-500">
+          <button 
+            onClick={(e) => { e.stopPropagation(); logout(); }} 
+            className="p-2 hover:bg-muted rounded-xl transition-colors text-foreground/40 hover:text-red-500"
+            title="Log Out"
+          >
             <LogOut className="w-4 h-4" />
           </button>
         </div>

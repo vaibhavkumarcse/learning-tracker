@@ -31,14 +31,17 @@ exports.updateTask = async (req, res) => {
         if (!updatedTask) return res.status(404).json({ message: 'Task not found' });
 
         // Log activity if completed
-        if (req.body.status === 'completed' && updatedTask.status === 'completed') {
-            await Activity.create({
-                type: 'task',
-                taskId: updatedTask._id,
-                subject: updatedTask.subject,
-                user: req.user._id,
-                duration: 30 // Default 30 mins for a task completion, adjust as needed
-            });
+        if (req.body.status === 'completed') {
+            const existingActivity = await Activity.findOne({ taskId: updatedTask._id, type: 'task' });
+            if (!existingActivity) {
+                await Activity.create({
+                    type: 'task',
+                    taskId: updatedTask._id,
+                    subject: updatedTask.subject,
+                    user: req.user._id,
+                    duration: 30 // Default 30 mins for a task completion
+                });
+            }
         }
         
         res.json(updatedTask);

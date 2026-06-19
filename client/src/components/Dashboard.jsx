@@ -8,20 +8,25 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'da
 
 const Dashboard = () => {
   const [stats, setStats] = React.useState({ activities: [], streak: null });
+  const [goals, setGoals] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const { data } = await api.getStats();
-        setStats(data);
+        const [statsRes, goalsRes] = await Promise.all([
+          api.getStats(),
+          api.getGoals()
+        ]);
+        setStats(statsRes.data);
+        setGoals(goalsRes.data);
       } catch (err) {
         console.error('Failed to fetch stats:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchStats();
+    fetchDashboardData();
   }, []);
 
   const getWeeklyActivity = () => {
@@ -207,6 +212,39 @@ const Dashboard = () => {
             ))}
             {stats.activities.filter(a => a.type === 'pomodoro').length === 0 && (
               <div className="text-sm text-foreground/50 text-center py-4">No focus sessions today yet.</div>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div variants={item} className="p-10 rounded-[2.5rem] border border-border bg-background shadow-sm">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="text-xl font-black">Active Goals</h3>
+            <span className="text-xs font-bold text-foreground/40">TARGETS</span>
+          </div>
+          <div className="space-y-6">
+            {goals.filter(g => g.status === 'active').slice(0, 3).map((goal, i) => (
+              <div key={i} className="flex items-center justify-between group">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center text-lg">
+                    🎯
+                  </div>
+                  <div>
+                    <div className="font-bold">{goal.title}</div>
+                    <div className="text-xs text-foreground/45 font-bold">
+                      Target: {new Date(goal.targetDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </div>
+                  </div>
+                </div>
+                <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${
+                  goal.difficulty === 'hard' ? 'bg-red-500/10 text-red-500' : 
+                  goal.difficulty === 'medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'
+                }`}>
+                  {goal.difficulty}
+                </span>
+              </div>
+            ))}
+            {goals.filter(g => g.status === 'active').length === 0 && (
+              <div className="text-sm text-foreground/50 text-center py-4">No active learning goals. Set one!</div>
             )}
           </div>
         </motion.div>

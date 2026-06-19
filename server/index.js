@@ -15,6 +15,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/subjects', require('./routes/subjects'));
 app.use('/api/activities', require('./routes/activities'));
+app.use('/api/goals', require('./routes/goals'));
 
 app.get('/', (req, res) => {
     res.send('Learning Tracker API is running');

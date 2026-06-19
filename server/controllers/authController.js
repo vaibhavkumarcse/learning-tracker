@@ -93,3 +93,83 @@ exports.googleLogin = async (req, res) => {
         res.status(401).json({ message: 'Google authentication failed' });
     }
 };
+
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: 'User with this email does not exist' });
+
+        // Generate 6-digit OTP code
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        user.resetPasswordOTP = otp;
+        user.resetPasswordOTPExpires = Date.now() + 15 * 60 * 1000; // 15 mins
+        await user.save();
+
+        console.log(`[RESET PASSWORD] OTP for ${email} is ${otp}`);
+
+        // Return OTP in response for demo purposes (so the frontend can read it without actual email sending)
+        res.json({ message: 'Verification code generated successfully', otp });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+        const user = await User.findOne({ 
+            email, 
+            resetPasswordOTP: otp,
+            resetPasswordOTPExpires: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid or expired verification code' });
+        }
+
+        // Update password (pre-save hook will hash it)
+        user.password = newPassword;
+        user.resetPasswordOTP = undefined;
+        user.resetPasswordOTPExpires = undefined;
+        await user.save();
+
+        res.json({ message: 'Password reset successful' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+exports.updateProfile = async (req, res) => {
+    try {
+        const { username, email, avatar, currentPassword, newPassword } = req.body;
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        if (username) user.username = username;
+        if (email) user.email = email;
+        if (avatar) user.avatar = avatar;
+
+        if (newPassword) {
+            if (!currentPassword) {
+                return res.status(400).json({ message: 'Current password is required to set a new password' });
+            }
+            const isMatch = await user.comparePassword(currentPassword);
+            if (!isMatch) {
+                return res.status(400).json({ message: 'Incorrect current password' });
+            }
+            user.password = newPassword;
+        }
+
+        await user.save();
+
+        res.json({
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            avatar: user.avatar
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
