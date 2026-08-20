@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import GlobalTimer from './components/GlobalTimer';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -70,6 +71,7 @@ function App() {
           </AnimatePresence>
         </div>
       </main>
+      <GlobalTimer activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );
 }

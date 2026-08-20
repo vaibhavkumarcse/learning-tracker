@@ -1,167 +1,25 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, Clock, BookOpen, CheckCircle, Zap, Timer as TimerIcon, Save } from 'lucide-react';
-import * as api from '../services/api';
+import { Play, Pause, RotateCcw, Clock, BookOpen, Save, Zap, Timer as TimerIcon } from 'lucide-react';
+import { useTimer } from '../context/TimerContext';
 
 const Pomodoro = () => {
-  // Timer mode: 'countdown' or 'stopwatch'
-  const [timerMode, setTimerMode] = useState('countdown');
-  const [isActive, setIsActive] = useState(false);
+  const {
+    timerMode, setTimerMode,
+    isActive,
+    presetMinutes,
+    countdownDisplay, setCountdownDisplay,
+    totalDurationRef,
+    stopwatchDisplay, setStopwatchDisplay,
+    selectedCategory, setSelectedCategory,
+    isSaving, successMsg, setSuccessMsg, errorMsg, setErrorMsg,
+    recentSessions, loadingStats,
+    toggleTimer, resetTimer, changePreset, handleStopAndSave, handlePartialSave, formatTime,
+    countdownRef, stopwatchRef
+  } = useTimer();
 
-  // Countdown timer - using refs for accurate time tracking inside setInterval
-  const [presetMinutes, setPresetMinutes] = useState(25);
-  const countdownRef = useRef(25 * 60); // actual seconds remaining
-  const [countdownDisplay, setCountdownDisplay] = useState(25 * 60); // for display only
-  const totalDurationRef = useRef(25 * 60); // for progress calc
-
-  // Stopwatch
-  const stopwatchRef = useRef(0); // actual elapsed seconds
-  const [stopwatchDisplay, setStopwatchDisplay] = useState(0); // for display only
-
-  // Categories & sessions
   const categories = ['Study', 'Revision', 'Practice', 'Project', 'Reading', 'Other'];
-  const [selectedCategory, setSelectedCategory] = useState('Study');
-  const [recentSessions, setRecentSessions] = useState([]);
-  const [loadingStats, setLoadingStats] = useState(true);
-
-  // Custom time input
   const [customMinInput, setCustomMinInput] = useState('');
-
-  // Notifications
-  const [successMsg, setSuccessMsg] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Interval ref
-  const intervalRef = useRef(null);
-
-  // Load initial data
-  useEffect(() => {
-    loadTimerData();
-    return () => clearInterval(intervalRef.current);
-  }, []);
-
-  const loadTimerData = async () => {
-    setLoadingStats(true);
-    try {
-      const statsRes = await api.getStats();
-
-      const allSessions = (statsRes.data?.activities || [])
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
-      setRecentSessions(allSessions);
-    } catch (err) {
-      console.error('Failed to load timer data:', err);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
-  // ─── Timer Control ────────────────────────────────────────────────────────────
-
-  const startInterval = useCallback(() => {
-    clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      if (timerMode === 'countdown') {
-        countdownRef.current -= 1;
-        setCountdownDisplay(countdownRef.current);
-
-        if (countdownRef.current <= 0) {
-          clearInterval(intervalRef.current);
-          setIsActive(false);
-          handleCountdownComplete();
-        }
-      } else {
-        stopwatchRef.current += 1;
-        setStopwatchDisplay(stopwatchRef.current);
-      }
-    }, 1000);
-  }, [timerMode]); // eslint-disable-line
-
-  useEffect(() => {
-    if (isActive) {
-      startInterval();
-    } else {
-      clearInterval(intervalRef.current);
-    }
-    return () => clearInterval(intervalRef.current);
-  }, [isActive, timerMode]);
-
-  const handleCountdownComplete = async () => {
-    const minutesStudied = Math.max(1, Math.round(totalDurationRef.current / 60));
-    await saveSession(minutesStudied, 'Countdown');
-    // Reset countdown
-    countdownRef.current = totalDurationRef.current;
-    setCountdownDisplay(totalDurationRef.current);
-  };
-
-  const toggleTimer = () => setIsActive(prev => !prev);
-
-  const resetTimer = () => {
-    clearInterval(intervalRef.current);
-    setIsActive(false);
-    setSuccessMsg('');
-    setErrorMsg('');
-    if (timerMode === 'countdown') {
-      countdownRef.current = presetMinutes * 60;
-      setCountdownDisplay(presetMinutes * 60);
-    } else {
-      stopwatchRef.current = 0;
-      setStopwatchDisplay(0);
-    }
-  };
-
-  const changePreset = (mins) => {
-    if (isActive) return;
-    setPresetMinutes(mins);
-    countdownRef.current = mins * 60;
-    totalDurationRef.current = mins * 60;
-    setCountdownDisplay(mins * 60);
-    setSuccessMsg('');
-    setErrorMsg('');
-  };
-
-  // ─── Save Session ─────────────────────────────────────────────────────────────
-
-  const saveSession = async (minutesStudied, mode) => {
-    if (isSaving) return;
-    setIsSaving(true);
-    setErrorMsg('');
-    setSuccessMsg('');
-
-    try {
-      const payload = {
-        type: 'pomodoro',
-        duration: minutesStudied,
-        date: new Date().toISOString(),
-        category: selectedCategory,
-        notes: `${mode} session – ${minutesStudied}m`
-      };
-      await api.logActivity(payload);
-      setSuccessMsg(`✓ Saved ${minutesStudied}m ${mode.toLowerCase()} session!`);
-      setTimeout(() => setSuccessMsg(''), 4000);
-      loadTimerData();
-    } catch (err) {
-      console.error('Failed to save session:', err);
-      setErrorMsg(err.response?.data?.message || 'Failed to log session. Try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleStopAndSave = async () => {
-    if (stopwatchRef.current < 10) {
-      setErrorMsg('Study at least 10 seconds before saving.');
-      return;
-    }
-    const minutesStudied = Math.max(1, Math.round(stopwatchRef.current / 60));
-    clearInterval(intervalRef.current);
-    setIsActive(false);
-    stopwatchRef.current = 0;
-    setStopwatchDisplay(0);
-    await saveSession(minutesStudied, 'Stopwatch');
-  };
-
-  // ─── Custom time form ─────────────────────────────────────────────────────────
 
   const handleCustomTimeSubmit = (e) => {
     e.preventDefault();
@@ -170,18 +28,6 @@ const Pomodoro = () => {
       changePreset(mins);
       setCustomMinInput('');
     }
-  };
-
-  // ─── Display Helpers ──────────────────────────────────────────────────────────
-
-  const formatTime = (totalSecs) => {
-    const h = Math.floor(totalSecs / 3600);
-    const m = Math.floor((totalSecs % 3600) / 60);
-    const s = totalSecs % 60;
-    if (h > 0) {
-      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-    }
-    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
   const getProgress = () => {
@@ -196,8 +42,6 @@ const Pomodoro = () => {
   const circumference = 930;
   const progress = getProgress();
   const dashOffset = circumference - (circumference * progress) / 100;
-
-  // ─── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <div className="max-w-4xl mx-auto py-10 space-y-12">
@@ -226,7 +70,6 @@ const Pomodoro = () => {
                     setTimerMode(mode);
                     setSuccessMsg('');
                     setErrorMsg('');
-                    // Reset whichever we're switching away from
                     if (mode === 'countdown') {
                       countdownRef.current = presetMinutes * 60;
                       setCountdownDisplay(presetMinutes * 60);
@@ -424,12 +267,7 @@ const Pomodoro = () => {
             <motion.button
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              onClick={async () => {
-                const elapsed = totalDurationRef.current - countdownDisplay;
-                const mins = Math.max(1, Math.round(elapsed / 60));
-                await saveSession(mins, 'Countdown');
-                changePreset(presetMinutes);
-              }}
+              onClick={handlePartialSave}
               disabled={isSaving}
               className="mt-6 px-5 py-2.5 border border-green-500/40 text-green-600 dark:text-green-400 rounded-xl text-xs font-bold hover:bg-green-500/10 transition-colors cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
             >
