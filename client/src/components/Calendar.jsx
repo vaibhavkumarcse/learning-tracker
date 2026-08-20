@@ -4,34 +4,15 @@ import {
   eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle, Clock } from 'lucide-react';
-import * as api from '../services/api';
+import { useData } from '../context/DataContext';
 
 const Calendar = () => {
+  const { tasks, stats, loading } = useData();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [tasks, setTasks] = useState([]);
-  const [activities, setActivities] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState(null);
 
-  useEffect(() => {
-    fetchCalendarData();
-  }, []);
-
-  const fetchCalendarData = async () => {
-    setLoading(true);
-    try {
-      const [tasksRes, statsRes] = await Promise.all([
-        api.getTasks(),
-        api.getStats()
-      ]);
-      setTasks(tasksRes.data || []);
-      setActivities(statsRes.data?.activities || []);
-    } catch (err) {
-      console.error('Failed to fetch calendar data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Local fetch logic removed, now handled by DataContext
+  const activities = stats?.activities || [];
 
   const days = eachDayOfInterval({
     start: startOfWeek(startOfMonth(currentDate)),

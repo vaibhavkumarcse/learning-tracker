@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, RotateCcw, Clock, BookOpen, Save, Zap, Timer as TimerIcon } from 'lucide-react';
 import { useTimer } from '../context/TimerContext';
+import { useData } from '../context/DataContext';
 
 const Pomodoro = () => {
   const {
@@ -13,10 +14,11 @@ const Pomodoro = () => {
     stopwatchDisplay, setStopwatchDisplay,
     selectedCategory, setSelectedCategory,
     isSaving, successMsg, setSuccessMsg, errorMsg, setErrorMsg,
-    recentSessions, loadingStats,
     toggleTimer, resetTimer, changePreset, handleStopAndSave, handlePartialSave, formatTime,
     countdownRef, stopwatchRef
   } = useTimer();
+  
+  const { stats, refreshStats } = useData();
 
   const categories = ['Study', 'Revision', 'Practice', 'Project', 'Reading', 'Other'];
   const [customMinInput, setCustomMinInput] = useState('');

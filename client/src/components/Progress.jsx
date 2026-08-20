@@ -3,36 +3,15 @@ import { motion } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, Target, Award, Zap, Clock, BookOpen } from 'lucide-react';
 import { format, eachDayOfInterval, isSameDay, subDays } from 'date-fns';
-import * as api from '../services/api';
+import { useData } from '../context/DataContext';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#ef4444'];
 
 const Progress = () => {
-  const [stats, setStats] = useState({ activities: [], streak: null });
-  const [goals, setGoals] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { stats, goals, tasks, loading } = useData();
   const [chartRange, setChartRange] = useState('weekly');
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [statsRes, goalsRes, tasksRes] = await Promise.all([
-          api.getStats(),
-          api.getGoals(),
-          api.getTasks(),
-        ]);
-        setStats(statsRes.data || { activities: [], streak: null });
-        setGoals(goalsRes.data || []);
-        setTasks(tasksRes.data || []);
-      } catch (err) {
-        console.error('Failed to load progress stats:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+  // Local fetch logic removed, now handled by DataContext
 
   if (loading) {
     return (

@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, CheckCircle2, Circle, MoreVertical, Filter, Search, Calendar as CalendarIcon, Edit3, X, BookOpen, Layers } from 'lucide-react';
 import * as api from '../services/api';
+import { useData } from '../context/DataContext';
 
 const TaskBoard = () => {
-  const [tasks, setTasks] = useState([]);
-  const [subjects, setSubjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { tasks, loading, updateTaskLocally, addTaskLocally, removeTaskLocally, refreshStats } = useData();
   const [searchQuery, setSearchQuery] = useState('');
   
   // Filter states
@@ -32,21 +31,7 @@ const TaskBoard = () => {
   const [editDueDate, setEditDueDate] = useState('');
   const [editCategory, setEditCategory] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const tasksRes = await api.getTasks();
-      setTasks(tasksRes.data || []);
-    } catch (err) {
-      console.error('Failed to load board data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // useEffect removed because DataContext handles initial fetch
 
   const handleAddTask = async (e) => {
     e.preventDefault();
@@ -63,9 +48,7 @@ const TaskBoard = () => {
       };
 
       const { data } = await api.createTask(payload);
-      // Refresh task list
-      const tasksRes = await api.getTasks();
-      setTasks(tasksRes.data);
+      addTaskLocally(data);
 
       setTitle('');
       setNotes('');
@@ -83,7 +66,8 @@ const TaskBoard = () => {
 
     try {
       const { data } = await api.updateTask(task._id, { status: nextStatus, completedAt });
-      setTasks(tasks.map(t => t._id === task._id ? data : t));
+      updateTaskLocally(data);
+      refreshStats(); // Update stats in case an activity was created or removed
     } catch (err) {
       console.error('Failed to toggle task status:', err);
     }
@@ -92,7 +76,8 @@ const TaskBoard = () => {
   const handleDeleteTask = async (id) => {
     try {
       await api.deleteTask(id);
-      setTasks(tasks.filter(t => t._id !== id));
+      removeTaskLocally(id);
+      refreshStats(); // Update stats in case an activity was removed
     } catch (err) {
       console.error('Failed to delete task:', err);
     }
@@ -123,11 +108,10 @@ const TaskBoard = () => {
         completedAt: editStatus === 'completed' ? new Date() : null
       };
 
-      await api.updateTask(editingTask._id, payload);
+      const { data } = await api.updateTask(editingTask._id, payload);
       setEditingTask(null);
-      // Reload all tasks to populate subject references correctly
-      const tasksRes = await api.getTasks();
-      setTasks(tasksRes.data);
+      updateTaskLocally(data);
+      refreshStats();
     } catch (err) {
       console.error('Failed to update task:', err);
     }

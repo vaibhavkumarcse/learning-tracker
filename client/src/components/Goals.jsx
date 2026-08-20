@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Calendar, Target, CheckCircle, Circle, AlertCircle, X } from 'lucide-react';
 import * as api from '../services/api';
+import { useData } from '../context/DataContext';
 
 const Goals = () => {
-  const [goals, setGoals] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { goals, setGoals } = useData();
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -15,23 +16,6 @@ const Goals = () => {
   const [description, setDescription] = useState('');
   const [targetDate, setTargetDate] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
-
-  useEffect(() => {
-    fetchGoals();
-  }, []);
-
-  const fetchGoals = async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.getGoals();
-      setGoals(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch goals:', err);
-      setError('Could not load learning goals. Please refresh the page.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const resetForm = () => {
     setTitle('');

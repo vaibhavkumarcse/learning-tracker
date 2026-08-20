@@ -5,29 +5,12 @@ import { Clock, CheckCircle2, Book, TrendingUp, ArrowUpRight, Zap, Target } from
 
 import * as api from '../services/api';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
+import { useData } from '../context/DataContext';
 
 const Dashboard = () => {
-  const [stats, setStats] = React.useState({ activities: [], streak: null });
-  const [goals, setGoals] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
+  const { stats, goals, loading } = useData();
 
-  React.useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const [statsRes, goalsRes] = await Promise.all([
-          api.getStats(),
-          api.getGoals()
-        ]);
-        setStats(statsRes.data);
-        setGoals(goalsRes.data);
-      } catch (err) {
-        console.error('Failed to fetch stats:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboardData();
-  }, []);
+  // Local fetch logic removed, now handled by DataContext
 
   const getWeeklyActivity = () => {
     const days = eachDayOfInterval({ start: startOfWeek(new Date()), end: endOfWeek(new Date()) });
@@ -39,9 +22,9 @@ const Dashboard = () => {
   };
 
   const activityData = getWeeklyActivity();
-  const totalHours = stats.activities.reduce((acc, a) => acc + (a.duration / 60), 0).toFixed(1);
-  const totalTasks = stats.activities.filter(a => a.type === 'task').length;
-  const currentStreak = stats.streak?.currentStreak || 0;
+  const totalHours = (stats?.activities || []).reduce((acc, a) => acc + (a.duration / 60), 0).toFixed(1);
+  const totalTasks = (stats?.activities || []).filter(a => a.type === 'task').length;
+  const currentStreak = stats?.streak?.currentStreak || 0;
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -151,7 +134,7 @@ const Dashboard = () => {
             {Array.from({ length: 35 }).map((_, i) => {
               const d = new Date();
               d.setDate(d.getDate() - (34 - i));
-              const dayActivities = stats.activities.filter(a => isSameDay(new Date(a.date), d));
+              const dayActivities = (stats?.activities || []).filter(a => isSameDay(new Date(a.date), d));
               const totalMinutes = dayActivities.reduce((sum, act) => sum + (act.duration || 0), 0);
               
               const hours = Math.floor(totalMinutes / 60);
@@ -195,7 +178,7 @@ const Dashboard = () => {
             <span className="text-xs font-bold text-foreground/40">TODAY</span>
           </div>
           <div className="space-y-6">
-            {stats.activities.filter(a => a.type === 'pomodoro').slice(0, 3).map((session, i) => (
+            {(stats?.activities || []).filter(a => a.type === 'pomodoro').slice(0, 3).map((session, i) => (
               <div key={i} className="flex items-center justify-between group cursor-pointer">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center font-black text-xs group-hover:bg-foreground group-hover:text-background transition-colors">
@@ -211,7 +194,7 @@ const Dashboard = () => {
                 </div>
               </div>
             ))}
-            {stats.activities.filter(a => a.type === 'pomodoro').length === 0 && (
+            {(stats?.activities || []).filter(a => a.type === 'pomodoro').length === 0 && (
               <div className="text-sm text-foreground/50 text-center py-4">No focus sessions today yet.</div>
             )}
           </div>
