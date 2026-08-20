@@ -5,6 +5,7 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, CheckCircle2, Circle, Clock } from 'lucide-react';
 import { useData } from '../context/DataContext';
+import { useTimer } from '../context/TimerContext';
 
 const Calendar = () => {
   const { tasks, stats, loading } = useData();
@@ -13,6 +14,18 @@ const Calendar = () => {
 
   // Local fetch logic removed, now handled by DataContext
   const activities = stats?.activities || [];
+  
+  const { timerMode, countdownDisplay, stopwatchDisplay, totalDurationRef } = useTimer();
+
+  const getUnsavedMinutes = () => {
+    if (timerMode === 'countdown') {
+      const elapsed = totalDurationRef.current - countdownDisplay;
+      return elapsed > 0 ? Math.floor(elapsed / 60) : 0;
+    } else {
+      return Math.floor(stopwatchDisplay / 60);
+    }
+  };
+  const unsavedMinutes = getUnsavedMinutes();
 
   const days = eachDayOfInterval({
     start: startOfWeek(startOfMonth(currentDate)),
@@ -105,8 +118,12 @@ const Calendar = () => {
             <div className="grid grid-cols-7">
               {days.map((day, i) => {
                 const dayTasks = getTasksForDay(day);
-                const studyTime = getStudyTimeForDay(day);
                 const isToday = isSameDay(day, new Date());
+                const baseStudyTime = getStudyTimeForDay(day);
+                const totalMinutes = baseStudyTime.totalMinutes + (isToday ? unsavedMinutes : 0);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                const studyTime = { totalMinutes, hours, minutes, count: baseStudyTime.count };
                 const isSelected = selectedDay && isSameDay(day, selectedDay);
                 const isCurrentMonth = isSameMonth(day, currentDate);
                 const heatmapBg = getHeatmapBg(studyTime.totalMinutes);
@@ -194,7 +211,13 @@ const Calendar = () => {
           {/* Selected Day Detail */}
           {selectedDay && (() => {
             const dayTasks = getTasksForDay(selectedDay);
-            const studyTime = getStudyTimeForDay(selectedDay);
+            const isToday = isSameDay(selectedDay, new Date());
+            const baseStudyTime = getStudyTimeForDay(selectedDay);
+            const totalMinutes = baseStudyTime.totalMinutes + (isToday ? unsavedMinutes : 0);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            const studyTime = { totalMinutes, hours, minutes, count: baseStudyTime.count };
+            
             const dayActivities = activities.filter(
               act => act.date && isSameDay(new Date(act.date), selectedDay) && act.type === 'pomodoro'
             );
