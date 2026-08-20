@@ -35,15 +35,23 @@ const Progress = () => {
   const longestStreak = stats.streak?.longestStreak || 0;
   const totalCompletedTasks = tasks.filter(t => t.status === 'completed').length;
 
+  const formatMins = (totalMins) => {
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  };
+
   // ─── Chart Data ───────────────────────────────────────────────────────────────
   const getChartData = (days) => {
     const interval = eachDayOfInterval({ start: subDays(new Date(), days - 1), end: new Date() });
     return interval.map(day => {
       const dayActs = activities.filter(a => isSameDay(new Date(a.date), day));
-      const hours = dayActs.reduce((acc, a) => acc + (a.duration / 60), 0);
+      const mins = dayActs.reduce((acc, a) => acc + (a.duration || 0), 0);
       return {
         name: days <= 7 ? format(day, 'EEE') : format(day, 'MMM d'),
-        hours: Number(hours.toFixed(1))
+        mins
       };
     });
   };
@@ -78,7 +86,7 @@ const Progress = () => {
       {/* Top KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
         {[
-          { label: 'Total Hours', value: `${totalHours.toFixed(1)}h`, icon: Clock, color: 'text-green-500' },
+          { label: 'Total Time', value: formatMins(totalStudyMinutes), icon: Clock, color: 'text-green-500' },
           { label: 'Current Streak', value: `${currentStreak}d`, icon: Zap, color: 'text-yellow-500' },
           { label: 'Longest Streak', value: `${longestStreak}d`, icon: Award, color: 'text-purple-500' },
           { label: 'Tasks Done', value: totalCompletedTasks, icon: Target, color: 'text-blue-500' },
@@ -139,7 +147,7 @@ const Progress = () => {
             <h4 className="text-2xl font-black mb-1">Scholar Ranking</h4>
             <p className="text-sm font-semibold opacity-70">
               Completed <strong className="font-black">{totalCompletedTasks} tasks</strong> and studied for{' '}
-              <strong className="font-black">{totalHours.toFixed(1)} hours</strong> total!
+              <strong className="font-black">{formatMins(totalStudyMinutes)}</strong> total!
             </p>
           </div>
         </div>
@@ -153,7 +161,7 @@ const Progress = () => {
               <Clock className="w-5 h-5" />
               Study Time Velocity
             </h3>
-            <p className="text-xs font-bold text-foreground/40 uppercase tracking-wider mt-1">Hours studied per day</p>
+            <p className="text-xs font-bold text-foreground/40 uppercase tracking-wider mt-1">Time studied per day</p>
           </div>
           <div className="flex bg-muted p-1.5 rounded-2xl gap-1.5 self-start">
             {[['weekly', '7 Days'], ['monthly', '30 Days']].map(([key, label]) => (
@@ -191,12 +199,13 @@ const Progress = () => {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: 'currentColor', fontSize: 10, fontWeight: 700, opacity: 0.4 }}
+                tickFormatter={(v) => formatMins(v)}
               />
               <Tooltip
                 contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', padding: '16px' }}
-                formatter={(v) => [`${v}h`, 'Hours Studied']}
+                formatter={(v) => [formatMins(v), 'Time Studied']}
               />
-              <Area type="monotone" dataKey="hours" stroke="#22c55e" strokeWidth={3} fillOpacity={1} fill="url(#gradHours)" />
+              <Area type="monotone" dataKey="mins" stroke="#22c55e" strokeWidth={3} fillOpacity={1} fill="url(#gradHours)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>

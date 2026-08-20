@@ -21,8 +21,19 @@ const Dashboard = () => {
     });
   };
 
+  const formatMins = (totalMins) => {
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  };
+
   const activityData = getWeeklyActivity();
-  const totalHours = (stats?.activities || []).reduce((acc, a) => acc + (a.duration / 60), 0).toFixed(1);
+  const deepWorkMins = (stats?.activities || [])
+    .filter(a => a.type === 'pomodoro')
+    .reduce((acc, a) => acc + (a.duration || 0), 0);
+  const deepWorkFormatted = formatMins(deepWorkMins);
   const totalTasks = (stats?.activities || []).filter(a => a.type === 'task').length;
   const currentStreak = stats?.streak?.currentStreak || 0;
   const container = {
@@ -60,7 +71,7 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Deep Work', value: `${totalHours}h`, icon: Zap, color: 'text-yellow-500' },
+          { label: 'Deep Work', value: deepWorkFormatted, icon: Zap, color: 'text-yellow-500' },
           { label: 'Tasks Done', value: totalTasks, icon: Target, color: 'text-blue-500' },
           { label: 'Active Streak', value: `${currentStreak}d`, icon: TrendingUp, color: 'text-red-500' },
         ].map((stat, i) => (
@@ -113,7 +124,7 @@ const Dashboard = () => {
                 />
                 <Tooltip 
                   contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', padding: '20px'}}
-                  formatter={(value) => [`${value} mins`, "Time Spent"]}
+                  formatter={(value) => [formatMins(value), "Time Spent"]}
                 />
                 <Area 
                   type="monotone" 
@@ -171,7 +182,7 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         <motion.div variants={item} className="p-6 md:p-10 rounded-3xl md:rounded-[2.5rem] border border-border bg-background shadow-sm">
           <div className="flex justify-between items-center mb-8">
             <h3 className="text-xl font-black">Focus Sessions</h3>
@@ -196,6 +207,33 @@ const Dashboard = () => {
             ))}
             {(stats?.activities || []).filter(a => a.type === 'pomodoro').length === 0 && (
               <div className="text-sm text-foreground/50 text-center py-4">No focus sessions today yet.</div>
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div variants={item} className="p-6 md:p-10 rounded-3xl md:rounded-[2.5rem] border border-border bg-background shadow-sm">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="text-xl font-black">Tasks Done</h3>
+            <span className="text-xs font-bold text-foreground/40">RECENT</span>
+          </div>
+          <div className="space-y-6">
+            {(stats?.activities || []).filter(a => a.type === 'task').slice(0, 3).map((taskAct, i) => (
+              <div key={i} className="flex items-center justify-between group">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center text-lg text-blue-500">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="font-bold truncate max-w-[120px]">{taskAct.taskId?.title || 'Completed Task'}</div>
+                    <div className="text-xs text-foreground/45 font-bold">
+                      {new Date(taskAct.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {(stats?.activities || []).filter(a => a.type === 'task').length === 0 && (
+              <div className="text-sm text-foreground/50 text-center py-4">No tasks completed yet.</div>
             )}
           </div>
         </motion.div>
