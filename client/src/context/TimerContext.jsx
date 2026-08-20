@@ -1,11 +1,14 @@
 import React, { createContext, useState, useEffect, useRef, useCallback, useContext } from 'react';
 import * as api from '../services/api';
+import { useData } from './DataContext';
 
 const TimerContext = createContext();
 
 export const useTimer = () => useContext(TimerContext);
 
 export const TimerProvider = ({ children }) => {
+  const { refreshStats } = useData();
+  
   const [timerMode, setTimerMode] = useState('countdown');
   const [isActive, setIsActive] = useState(false);
 
@@ -21,28 +24,9 @@ export const TimerProvider = ({ children }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  
-  const [recentSessions, setRecentSessions] = useState([]);
-  const [loadingStats, setLoadingStats] = useState(true);
-
   const intervalRef = useRef(null);
 
-  const loadTimerData = async () => {
-    setLoadingStats(true);
-    try {
-      const statsRes = await api.getStats();
-      const allSessions = (statsRes.data?.activities || [])
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
-      setRecentSessions(allSessions);
-    } catch (err) {
-      console.error('Failed to load timer data:', err);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
   useEffect(() => {
-    loadTimerData();
     return () => clearInterval(intervalRef.current);
   }, []);
 
@@ -63,7 +47,7 @@ export const TimerProvider = ({ children }) => {
       await api.logActivity(payload);
       setSuccessMsg(`✓ Saved ${minutesStudied}m ${mode.toLowerCase()} session!`);
       setTimeout(() => setSuccessMsg(''), 4000);
-      loadTimerData();
+      refreshStats();
     } catch (err) {
       console.error('Failed to save session:', err);
       setErrorMsg(err?.response?.data?.message || 'Failed to log session. Try again.');
@@ -173,7 +157,6 @@ export const TimerProvider = ({ children }) => {
         stopwatchDisplay, setStopwatchDisplay,
         selectedCategory, setSelectedCategory,
         isSaving, successMsg, setSuccessMsg, errorMsg, setErrorMsg,
-        recentSessions, loadingStats,
         toggleTimer, resetTimer, changePreset, handleStopAndSave, handlePartialSave, formatTime,
         countdownRef, stopwatchRef
       }}

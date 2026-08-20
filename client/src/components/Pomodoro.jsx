@@ -18,7 +18,10 @@ const Pomodoro = () => {
     countdownRef, stopwatchRef
   } = useTimer();
   
-  const { stats, refreshStats } = useData();
+  const { stats, refreshStats, loading: loadingStats } = useData();
+  const recentSessions = (stats?.activities || [])
+    .filter(a => a.type === 'pomodoro')
+    .slice(0, 6);
 
   const categories = ['Study', 'Revision', 'Practice', 'Project', 'Reading', 'Other'];
   const [customMinInput, setCustomMinInput] = useState('');
