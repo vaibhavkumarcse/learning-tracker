@@ -29,6 +29,22 @@ const Dashboard = () => {
     return `${m}m`;
   };
 
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-card border border-border p-4 rounded-2xl shadow-xl">
+          <p className="font-black text-foreground mb-1">{label}</p>
+          <div className="flex items-center gap-2 text-sm font-bold text-foreground/70">
+            <div className="w-2 h-2 rounded-full bg-foreground" />
+            <span>Time Spent:</span>
+            <span className="text-foreground font-black">{formatMins(payload[0].value)}</span>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   const activityData = getWeeklyActivity();
   const deepWorkMins = (stats?.activities || [])
     .filter(a => a.type === 'pomodoro')
@@ -121,10 +137,7 @@ const Dashboard = () => {
                   tickLine={false} 
                   tick={{fill: 'currentColor', fontSize: 12, fontWeight: 600, opacity: 0.4}}
                 />
-                <Tooltip 
-                  contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', padding: '20px'}}
-                  formatter={(value) => [formatMins(value), "Time Spent"]}
-                />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
                 <Area 
                   type="monotone" 
                   dataKey="mins" 

@@ -44,6 +44,22 @@ const Progress = () => {
     return `${m}m`;
   };
 
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-card border border-border p-4 rounded-2xl shadow-xl">
+          <p className="font-black text-foreground mb-1">{label}</p>
+          <div className="flex items-center gap-2 text-sm font-bold text-foreground/70">
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <span>Time Studied:</span>
+            <span className="text-foreground font-black">{formatMins(payload[0].value)}</span>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   // ─── Chart Data ───────────────────────────────────────────────────────────────
   const getChartData = (days) => {
     const interval = eachDayOfInterval({ start: subDays(new Date(), days - 1), end: new Date() });
@@ -202,10 +218,7 @@ const Progress = () => {
                 tick={{ fill: 'currentColor', fontSize: 10, fontWeight: 700, opacity: 0.4 }}
                 tickFormatter={(v) => formatMins(v)}
               />
-              <Tooltip
-                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', padding: '16px' }}
-                formatter={(v) => [formatMins(v), 'Time Studied']}
-              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
               <Area type="monotone" dataKey="mins" stroke="#22c55e" strokeWidth={3} fillOpacity={1} fill="url(#gradHours)" />
             </AreaChart>
           </ResponsiveContainer>
