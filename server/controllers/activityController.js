@@ -3,7 +3,7 @@ const Streak = require('../models/Streak');
 
 exports.getStats = async (req, res) => {
     try {
-        const activities = await Activity.find({ user: req.user._id }).populate('subject').populate('taskId').sort({ date: -1 });
+        const activities = await Activity.find({ user: req.user._id }).populate('taskId').sort({ date: -1 });
         // Simple streak calculation logic could go here or in a separate hook
         const streak = await Streak.findOne({ user: req.user._id });
         res.json({ activities, streak });

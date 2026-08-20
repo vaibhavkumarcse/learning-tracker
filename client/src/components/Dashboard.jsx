@@ -61,7 +61,6 @@ const Dashboard = () => {
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <motion.h2 variants={item} className="text-3xl md:text-4xl font-black tracking-tight mb-2">Overview</motion.h2>
-          <motion.p variants={item} className="text-foreground/50 font-medium">Your learning velocity is up <span className="text-foreground font-bold">12%</span> this week.</motion.p>
         </div>
         <motion.div variants={item} className="text-left md:text-right">
           <div className="text-xl md:text-2xl font-black">{format(new Date(), 'MMMM d, yyyy')}</div>
@@ -145,7 +144,7 @@ const Dashboard = () => {
             {Array.from({ length: 35 }).map((_, i) => {
               const d = new Date();
               d.setDate(d.getDate() - (34 - i));
-              const dayActivities = (stats?.activities || []).filter(a => isSameDay(new Date(a.date), d));
+              const dayActivities = (stats?.activities || []).filter(a => isSameDay(new Date(a.date), d) && a.type === 'pomodoro');
               const totalMinutes = dayActivities.reduce((sum, act) => sum + (act.duration || 0), 0);
               
               const hours = Math.floor(totalMinutes / 60);
