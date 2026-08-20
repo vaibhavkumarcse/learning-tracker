@@ -23,13 +23,14 @@ const Progress = () => {
   }
 
   const activities = stats.activities || [];
+  const timerActivities = activities.filter(a => a.type === 'pomodoro');
 
   // ─── Derived Stats ────────────────────────────────────────────────────────────
   const totalGoals = goals.length;
   const completedGoals = goals.filter(g => g.status === 'completed').length;
   const goalsPercentage = totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0;
 
-  const totalStudyMinutes = activities.reduce((acc, a) => acc + (a.duration || 0), 0);
+  const totalStudyMinutes = timerActivities.reduce((acc, a) => acc + (a.duration || 0), 0);
   const totalHours = totalStudyMinutes / 60;
   const currentStreak = stats.streak?.currentStreak || 0;
   const longestStreak = stats.streak?.longestStreak || 0;
@@ -47,7 +48,7 @@ const Progress = () => {
   const getChartData = (days) => {
     const interval = eachDayOfInterval({ start: subDays(new Date(), days - 1), end: new Date() });
     return interval.map(day => {
-      const dayActs = activities.filter(a => isSameDay(new Date(a.date), day));
+      const dayActs = timerActivities.filter(a => isSameDay(new Date(a.date), day));
       const mins = dayActs.reduce((acc, a) => acc + (a.duration || 0), 0);
       return {
         name: days <= 7 ? format(day, 'EEE') : format(day, 'MMM d'),
@@ -60,7 +61,7 @@ const Progress = () => {
 
   // ─── Subject Distribution (from activities) ────────────────────────────────
   const subjectMap = {};
-  activities.forEach(a => {
+  timerActivities.forEach(a => {
     const key = a.subject?.name || 'General';
     if (!subjectMap[key]) subjectMap[key] = 0;
     subjectMap[key] += a.duration || 0;

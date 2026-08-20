@@ -27,7 +27,7 @@ const Calendar = () => {
 
   const getStudyTimeForDay = (day) => {
     const dayActs = activities.filter(
-      act => act.date && isSameDay(new Date(act.date), day)
+      act => act.date && isSameDay(new Date(act.date), day) && act.type === 'pomodoro'
     );
     const totalMinutes = dayActs.reduce((sum, act) => sum + (act.duration || 0), 0);
     const hours = Math.floor(totalMinutes / 60);
@@ -196,7 +196,7 @@ const Calendar = () => {
             const dayTasks = getTasksForDay(selectedDay);
             const studyTime = getStudyTimeForDay(selectedDay);
             const dayActivities = activities.filter(
-              act => act.date && isSameDay(new Date(act.date), selectedDay)
+              act => act.date && isSameDay(new Date(act.date), selectedDay) && act.type === 'pomodoro'
             );
 
             return (
