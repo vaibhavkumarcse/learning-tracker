@@ -1,10 +1,10 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, CheckSquare, Calendar, BarChart3, Timer, Zap, Sun, Moon, LogOut, Target } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Calendar, BarChart3, Timer, Zap, Sun, Moon, LogOut, Target, X } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
-const Sidebar = ({ activeTab, setActiveTab }) => {
+const Sidebar = ({ activeTab, setActiveTab, isMobileMenuOpen, setIsMobileMenuOpen }) => {
   const { darkMode, toggleDarkMode } = useTheme();
   const { user, logout } = useAuth();
 
@@ -21,15 +21,23 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     <motion.div 
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="w-72 h-screen border-r border-border bg-background flex flex-col p-8 fixed left-0 top-0 z-50 shadow-sm"
+      className={`w-72 h-screen border-r border-border bg-background flex flex-col p-6 md:p-8 fixed left-0 top-0 z-50 shadow-sm transition-transform duration-300 ${
+        isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      }`}
     >
-      <div className="flex items-center justify-between mb-12 px-2">
+      <div className="flex items-center justify-between mb-8 md:mb-12 px-2">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-foreground text-background rounded-xl flex items-center justify-center shadow-lg shadow-foreground/10">
             <Zap className="w-6 h-6 fill-current" />
           </div>
           <h1 className="text-xl font-bold tracking-tight">TRACKER.</h1>
         </div>
+        <button 
+          onClick={() => setIsMobileMenuOpen(false)} 
+          className="md:hidden p-2 text-foreground/50 hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
       
       <nav className="flex-1 space-y-2">

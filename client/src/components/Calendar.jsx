@@ -134,7 +134,7 @@ const Calendar = () => {
                   <div
                     key={i}
                     onClick={() => setSelectedDay(isSelected ? null : day)}
-                    className={`min-h-[120px] p-2.5 border-r border-b border-border transition-all flex flex-col cursor-pointer
+                    className={`min-h-[80px] md:min-h-[120px] p-1 md:p-2.5 border-r border-b border-border transition-all flex flex-col cursor-pointer
                       ${!isCurrentMonth ? 'opacity-30 bg-muted/5' : ''}
                       ${isToday ? 'bg-foreground/5' : ''}
                       ${heatmapBg}
@@ -144,10 +144,10 @@ const Calendar = () => {
                   >
                     {/* Date number */}
                     <div className="flex justify-between items-start mb-1">
-                      <span className={`text-xs font-black leading-none ${
+                      <span className={`text-[10px] md:text-xs font-black leading-none ${
                         isToday
-                          ? 'w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center shadow-sm'
-                          : 'text-foreground/60'
+                          ? 'w-5 h-5 md:w-6 md:h-6 rounded-full bg-foreground text-background flex items-center justify-center shadow-sm'
+                          : 'text-foreground/60 p-0.5 md:p-1'
                       }`}>
                         {format(day, 'd')}
                       </span>
@@ -197,15 +197,15 @@ const Calendar = () => {
           </div>
 
           {/* Heatmap Legend */}
-          <div className="flex justify-end items-center gap-3 text-xs font-bold text-foreground/50 px-2">
+          <div className="flex flex-wrap justify-center md:justify-end items-center gap-2 md:gap-3 text-[10px] md:text-xs font-bold text-foreground/50 px-2 mt-4 md:mt-0">
             <span>Less studied</span>
-            <div className="flex gap-1.5 items-center">
-              <div className="w-4 h-4 rounded border border-border bg-card" title="No study" />
-              <div className="w-4 h-4 rounded bg-green-200/60 dark:bg-green-900/30" title="1–30 min" />
-              <div className="w-4 h-4 rounded bg-green-300/60 dark:bg-green-800/40" title="31–60 min" />
-              <div className="w-4 h-4 rounded bg-green-400/50 dark:bg-green-700/50" title="61–120 min" />
-              <div className="w-4 h-4 rounded bg-green-500/50 dark:bg-green-600/55" title="121–240 min" />
-              <div className="w-4 h-4 rounded bg-green-600/60 dark:bg-green-500/60" title=">240 min" />
+            <div className="flex gap-1 md:gap-1.5 items-center">
+              <div className="w-3 h-3 md:w-4 md:h-4 rounded border border-border bg-card" title="No study" />
+              <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-green-200/60 dark:bg-green-900/30" title="1–30 min" />
+              <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-green-300/60 dark:bg-green-800/40" title="31–60 min" />
+              <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-green-400/50 dark:bg-green-700/50" title="61–120 min" />
+              <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-green-500/50 dark:bg-green-600/55" title="121–240 min" />
+              <div className="w-3 h-3 md:w-4 md:h-4 rounded bg-green-600/60 dark:bg-green-500/60" title=">240 min" />
             </div>
             <span>More studied</span>
           </div>

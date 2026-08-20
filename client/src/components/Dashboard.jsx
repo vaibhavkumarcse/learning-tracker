@@ -64,13 +64,13 @@ const Dashboard = () => {
       animate="show"
       className="space-y-10 pb-10"
     >
-      <header className="flex justify-between items-end">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <motion.h2 variants={item} className="text-4xl font-black tracking-tight mb-2">Overview</motion.h2>
+          <motion.h2 variants={item} className="text-3xl md:text-4xl font-black tracking-tight mb-2">Overview</motion.h2>
           <motion.p variants={item} className="text-foreground/50 font-medium">Your learning velocity is up <span className="text-foreground font-bold">12%</span> this week.</motion.p>
         </div>
-        <motion.div variants={item} className="text-right">
-          <div className="text-2xl font-black">{format(new Date(), 'MMMM d, yyyy')}</div>
+        <motion.div variants={item} className="text-left md:text-right">
+          <div className="text-xl md:text-2xl font-black">{format(new Date(), 'MMMM d, yyyy')}</div>
           <div className="text-sm font-bold text-foreground/50 uppercase tracking-widest">{format(new Date(), 'EEEE')}</div>
         </motion.div>
       </header>
@@ -84,7 +84,7 @@ const Dashboard = () => {
           <motion.div 
             key={i} 
             variants={item}
-            className="p-8 rounded-[2rem] border border-border bg-background hover:border-foreground/20 transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:shadow-black/5"
+            className="p-6 md:p-8 rounded-3xl md:rounded-[2rem] border border-border bg-background hover:border-foreground/20 transition-all group relative overflow-hidden shadow-sm hover:shadow-xl hover:shadow-black/5"
           >
             <div className="flex justify-between items-start mb-6">
               <div className="p-3 bg-muted rounded-2xl group-hover:scale-110 transition-transform">
@@ -98,8 +98,8 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <motion.div variants={item} className="lg:col-span-2 p-10 rounded-[2.5rem] border border-border bg-background shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        <motion.div variants={item} className="lg:col-span-2 p-6 md:p-10 rounded-3xl md:rounded-[2.5rem] border border-border bg-background shadow-sm">
           <div className="flex justify-between items-center mb-10">
             <h3 className="text-xl font-black">Performance Analytics</h3>
             <div className="flex gap-2">
@@ -145,7 +145,7 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        <motion.div variants={item} className="p-10 rounded-[2.5rem] border border-border bg-background shadow-sm flex flex-col">
+        <motion.div variants={item} className="p-6 md:p-10 rounded-3xl md:rounded-[2.5rem] border border-border bg-background shadow-sm flex flex-col">
           <h3 className="text-xl font-black mb-10">Activity Heatmap</h3>
           <div className="flex-1 grid grid-cols-7 gap-2 overflow-hidden">
             {Array.from({ length: 35 }).map((_, i) => {
@@ -188,8 +188,8 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <motion.div variants={item} className="p-10 rounded-[2.5rem] border border-border bg-background shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
+        <motion.div variants={item} className="p-6 md:p-10 rounded-3xl md:rounded-[2.5rem] border border-border bg-background shadow-sm">
           <div className="flex justify-between items-center mb-8">
             <h3 className="text-xl font-black">Focus Sessions</h3>
             <span className="text-xs font-bold text-foreground/40">TODAY</span>
@@ -217,7 +217,7 @@ const Dashboard = () => {
           </div>
         </motion.div>
 
-        <motion.div variants={item} className="p-10 rounded-[2.5rem] border border-border bg-background shadow-sm">
+        <motion.div variants={item} className="p-6 md:p-10 rounded-3xl md:rounded-[2.5rem] border border-border bg-background shadow-sm">
           <div className="flex justify-between items-center mb-8">
             <h3 className="text-xl font-black">Active Goals</h3>
             <span className="text-xs font-bold text-foreground/40">TARGETS</span>

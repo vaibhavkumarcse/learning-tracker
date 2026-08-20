@@ -9,6 +9,7 @@ import Goals from './components/Goals';
 import Profile from './components/Profile';
 import { useAuth } from './context/AuthContext';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Menu, Zap } from 'lucide-react';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -17,6 +18,7 @@ import GlobalTimer from './components/GlobalTimer';
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [authView, setAuthView] = useState('landing');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, loading } = useAuth();
 
   const renderContent = () => {
@@ -54,10 +56,43 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main className="flex-1 ml-72 min-h-screen p-12 transition-colors duration-500 bg-background">
-        <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-background text-foreground flex relative">
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          setIsMobileMenuOpen(false);
+        }} 
+        isMobileMenuOpen={isMobileMenuOpen}
+        setIsMobileMenuOpen={setIsMobileMenuOpen}
+      />
+      
+      <main className="flex-1 md:ml-72 min-h-screen p-4 pt-24 md:p-12 transition-all duration-500 bg-background flex flex-col w-full">
+        {/* Mobile Header */}
+        <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-md border-b border-border z-30 flex items-center justify-between px-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-foreground text-background rounded-lg flex items-center justify-center">
+              <Zap className="w-4 h-4 fill-current" />
+            </div>
+            <h1 className="text-lg font-bold tracking-tight">TRACKER.</h1>
+          </div>
+          <button 
+            onClick={() => setIsMobileMenuOpen(true)} 
+            className="p-2 rounded-lg bg-muted text-foreground hover:bg-border transition-colors"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="max-w-6xl mx-auto w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}

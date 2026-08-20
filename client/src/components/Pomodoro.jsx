@@ -44,10 +44,10 @@ const Pomodoro = () => {
   const dashOffset = circumference - (circumference * progress) / 100;
 
   return (
-    <div className="max-w-4xl mx-auto py-10 space-y-12">
+    <div className="max-w-4xl mx-auto py-6 md:py-10 space-y-8 md:space-y-12">
       <header>
-        <h2 className="text-4xl font-black tracking-tight mb-2">Study Timer</h2>
-        <p className="text-foreground/50 font-medium">Start studying – your time is automatically logged.</p>
+        <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-2">Study Timer</h2>
+        <p className="text-sm md:text-base text-foreground/50 font-medium">Start studying – your time is automatically logged.</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -176,7 +176,7 @@ const Pomodoro = () => {
         </div>
 
         {/* ─── Right: Circular Timer ─── */}
-        <div className="lg:col-span-2 flex flex-col items-center justify-center p-8 rounded-[2.5rem] border border-border bg-card shadow-lg relative min-h-[520px]">
+        <div className="lg:col-span-2 flex flex-col items-center justify-center p-6 md:p-8 rounded-3xl md:rounded-[2.5rem] border border-border bg-card shadow-lg relative min-h-[400px] md:min-h-[520px] overflow-hidden">
 
           {/* Notifications */}
           <AnimatePresence>
@@ -198,7 +198,7 @@ const Pomodoro = () => {
           </AnimatePresence>
 
           {/* Ring + time display */}
-          <div className="flex flex-col items-center justify-center pt-4">
+          <div className="flex flex-col items-center justify-center pt-4 scale-75 md:scale-100">
             <div className="w-[300px] h-[300px] rounded-full border-[12px] border-muted flex items-center justify-center relative">
               <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 300 300">
                 <circle
@@ -285,8 +285,8 @@ const Pomodoro = () => {
       </div>
 
       {/* ─── Recent Sessions ─── */}
-      <div className="p-8 rounded-[2.5rem] border border-border bg-card shadow-sm space-y-6">
-        <h3 className="text-xl font-black flex items-center gap-2">
+      <div className="p-6 md:p-8 rounded-3xl md:rounded-[2.5rem] border border-border bg-card shadow-sm space-y-6">
+        <h3 className="text-lg md:text-xl font-black flex items-center gap-2">
           <Zap className="w-5 h-5 text-yellow-500 fill-current" />
           Recent Sessions
         </h3>

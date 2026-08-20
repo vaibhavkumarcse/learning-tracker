@@ -31,9 +31,9 @@ const GlobalTimer = ({ activeTab, setActiveTab }) => {
           initial={{ opacity: 0, y: 50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 50, scale: 0.9 }}
-          className="fixed bottom-8 right-8 z-50 flex items-center gap-4 bg-card border border-border p-3 rounded-full shadow-2xl shadow-black/20"
+          className="fixed bottom-4 right-4 md:bottom-8 md:right-8 z-50 flex items-center gap-3 md:gap-4 bg-card border border-border p-2 md:p-3 rounded-full shadow-2xl shadow-black/20"
         >
-          <div className="flex flex-col ml-3 select-none">
+          <div className="flex flex-col ml-2 md:ml-3 select-none">
             <span className="text-[10px] font-black uppercase tracking-widest text-foreground/50">
               {timerMode === 'countdown' ? 'Focus' : 'Elapsed'}
             </span>
