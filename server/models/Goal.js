@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const goalSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String },
-    targetDate: { type: Date, required: true },
+    targetDate: { type: Date },
     difficulty: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
     status: { type: String, enum: ['active', 'completed', 'abandoned'], default: 'active' },
     completedAt: { type: Date },

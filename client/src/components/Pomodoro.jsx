@@ -1,153 +1,512 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, RotateCcw, Coffee, Brain, ChevronRight, Zap } from 'lucide-react';
-
+import { Play, Pause, RotateCcw, Clock, BookOpen, CheckCircle, Zap, Timer as TimerIcon, Save } from 'lucide-react';
 import * as api from '../services/api';
 
 const Pomodoro = () => {
-  const [minutes, setMinutes] = useState(25);
-  const [seconds, setSeconds] = useState(0);
+  // Timer mode: 'countdown' or 'stopwatch'
+  const [timerMode, setTimerMode] = useState('countdown');
   const [isActive, setIsActive] = useState(false);
-  const [mode, setMode] = useState('work'); 
-  const [sessions, setSessions] = useState(0);
 
-  const totalSeconds = mode === 'work' ? 25 * 60 : 5 * 60;
-  const remainingSeconds = minutes * 60 + seconds;
-  const progress = ((totalSeconds - remainingSeconds) / totalSeconds) * 100;
+  // Countdown timer - using refs for accurate time tracking inside setInterval
+  const [presetMinutes, setPresetMinutes] = useState(25);
+  const countdownRef = useRef(25 * 60); // actual seconds remaining
+  const [countdownDisplay, setCountdownDisplay] = useState(25 * 60); // for display only
+  const totalDurationRef = useRef(25 * 60); // for progress calc
 
+  // Stopwatch
+  const stopwatchRef = useRef(0); // actual elapsed seconds
+  const [stopwatchDisplay, setStopwatchDisplay] = useState(0); // for display only
+
+  // Categories & sessions
+  const categories = ['Study', 'Revision', 'Practice', 'Project', 'Reading', 'Other'];
+  const [selectedCategory, setSelectedCategory] = useState('Study');
+  const [recentSessions, setRecentSessions] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  // Custom time input
+  const [customMinInput, setCustomMinInput] = useState('');
+
+  // Notifications
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Interval ref
+  const intervalRef = useRef(null);
+
+  // Load initial data
   useEffect(() => {
-    let interval = null;
-    if (isActive) {
-      interval = setInterval(async () => {
-        if (seconds > 0) {
-          setSeconds(seconds - 1);
-        } else if (minutes > 0) {
-          setMinutes(minutes - 1);
-          setSeconds(59);
-        } else {
-          setIsActive(false);
-          const nextMode = mode === 'work' ? 'break' : 'work';
-          if (mode === 'work') {
-            setSessions(s => s + 1);
-            try {
-              await api.logActivity({ type: 'pomodoro', duration: 25 });
-            } catch (err) {
-              console.error('Failed to log pomodoro:', err);
-            }
-          }
-          setMode(nextMode);
-          setMinutes(nextMode === 'work' ? 25 : 5);
-          setSeconds(0);
-        }
-      }, 1000);
-    } else {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [isActive, seconds, minutes, mode]);
+    loadTimerData();
+    return () => clearInterval(intervalRef.current);
+  }, []);
 
-  const toggleTimer = () => setIsActive(!isActive);
-  
-  const resetTimer = () => {
-    setIsActive(false);
-    setMinutes(mode === 'work' ? 25 : 5);
-    setSeconds(0);
+  const loadTimerData = async () => {
+    setLoadingStats(true);
+    try {
+      const statsRes = await api.getStats();
+
+      const allSessions = (statsRes.data?.activities || [])
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+      setRecentSessions(allSessions);
+    } catch (err) {
+      console.error('Failed to load timer data:', err);
+    } finally {
+      setLoadingStats(false);
+    }
   };
 
+  // ─── Timer Control ────────────────────────────────────────────────────────────
+
+  const startInterval = useCallback(() => {
+    clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
+      if (timerMode === 'countdown') {
+        countdownRef.current -= 1;
+        setCountdownDisplay(countdownRef.current);
+
+        if (countdownRef.current <= 0) {
+          clearInterval(intervalRef.current);
+          setIsActive(false);
+          handleCountdownComplete();
+        }
+      } else {
+        stopwatchRef.current += 1;
+        setStopwatchDisplay(stopwatchRef.current);
+      }
+    }, 1000);
+  }, [timerMode]); // eslint-disable-line
+
+  useEffect(() => {
+    if (isActive) {
+      startInterval();
+    } else {
+      clearInterval(intervalRef.current);
+    }
+    return () => clearInterval(intervalRef.current);
+  }, [isActive, timerMode]);
+
+  const handleCountdownComplete = async () => {
+    const minutesStudied = Math.max(1, Math.round(totalDurationRef.current / 60));
+    await saveSession(minutesStudied, 'Countdown');
+    // Reset countdown
+    countdownRef.current = totalDurationRef.current;
+    setCountdownDisplay(totalDurationRef.current);
+  };
+
+  const toggleTimer = () => setIsActive(prev => !prev);
+
+  const resetTimer = () => {
+    clearInterval(intervalRef.current);
+    setIsActive(false);
+    setSuccessMsg('');
+    setErrorMsg('');
+    if (timerMode === 'countdown') {
+      countdownRef.current = presetMinutes * 60;
+      setCountdownDisplay(presetMinutes * 60);
+    } else {
+      stopwatchRef.current = 0;
+      setStopwatchDisplay(0);
+    }
+  };
+
+  const changePreset = (mins) => {
+    if (isActive) return;
+    setPresetMinutes(mins);
+    countdownRef.current = mins * 60;
+    totalDurationRef.current = mins * 60;
+    setCountdownDisplay(mins * 60);
+    setSuccessMsg('');
+    setErrorMsg('');
+  };
+
+  // ─── Save Session ─────────────────────────────────────────────────────────────
+
+  const saveSession = async (minutesStudied, mode) => {
+    if (isSaving) return;
+    setIsSaving(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    try {
+      const payload = {
+        type: 'pomodoro',
+        duration: minutesStudied,
+        date: new Date().toISOString(),
+        category: selectedCategory,
+        notes: `${mode} session – ${minutesStudied}m`
+      };
+      await api.logActivity(payload);
+      setSuccessMsg(`✓ Saved ${minutesStudied}m ${mode.toLowerCase()} session!`);
+      setTimeout(() => setSuccessMsg(''), 4000);
+      loadTimerData();
+    } catch (err) {
+      console.error('Failed to save session:', err);
+      setErrorMsg(err.response?.data?.message || 'Failed to log session. Try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleStopAndSave = async () => {
+    if (stopwatchRef.current < 10) {
+      setErrorMsg('Study at least 10 seconds before saving.');
+      return;
+    }
+    const minutesStudied = Math.max(1, Math.round(stopwatchRef.current / 60));
+    clearInterval(intervalRef.current);
+    setIsActive(false);
+    stopwatchRef.current = 0;
+    setStopwatchDisplay(0);
+    await saveSession(minutesStudied, 'Stopwatch');
+  };
+
+  // ─── Custom time form ─────────────────────────────────────────────────────────
+
+  const handleCustomTimeSubmit = (e) => {
+    e.preventDefault();
+    const mins = parseInt(customMinInput, 10);
+    if (!isNaN(mins) && mins > 0 && mins <= 480) {
+      changePreset(mins);
+      setCustomMinInput('');
+    }
+  };
+
+  // ─── Display Helpers ──────────────────────────────────────────────────────────
+
+  const formatTime = (totalSecs) => {
+    const h = Math.floor(totalSecs / 3600);
+    const m = Math.floor((totalSecs % 3600) / 60);
+    const s = totalSecs % 60;
+    if (h > 0) {
+      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
+
+  const getProgress = () => {
+    if (timerMode === 'countdown') {
+      if (totalDurationRef.current === 0) return 0;
+      return ((totalDurationRef.current - countdownDisplay) / totalDurationRef.current) * 100;
+    }
+    // Stopwatch: cycle progress every 30 mins
+    return (stopwatchDisplay % 1800) / 1800 * 100;
+  };
+
+  const circumference = 930;
+  const progress = getProgress();
+  const dashOffset = circumference - (circumference * progress) / 100;
+
+  // ─── Render ───────────────────────────────────────────────────────────────────
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[80vh]">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-12"
-      >
-        <span className="text-xs font-black uppercase tracking-[0.3em] text-foreground/40 mb-4 block">Focus Mode</span>
-        <h2 className="text-5xl font-black tracking-tighter mb-4">
-          {mode === 'work' ? 'Deep Work Session' : 'Rest & Recharge'}
-        </h2>
-        <div className="flex items-center justify-center gap-2 text-foreground/50 font-bold">
-          <Zap className="w-4 h-4" />
-          <span>Session #{sessions + 1}</span>
-        </div>
-      </motion.div>
+    <div className="max-w-4xl mx-auto py-10 space-y-12">
+      <header>
+        <h2 className="text-4xl font-black tracking-tight mb-2">Study Timer</h2>
+        <p className="text-foreground/50 font-medium">Start studying – your time is automatically logged.</p>
+      </header>
 
-      <div className="relative group">
-        {/* Progress Ring */}
-        <div className="w-[450px] h-[450px] rounded-full border-[16px] border-muted flex items-center justify-center relative">
-          <svg className="absolute inset-0 w-full h-full -rotate-90">
-            <motion.circle
-              cx="225"
-              cy="225"
-              r="209"
-              fill="transparent"
-              stroke="currentColor"
-              strokeWidth="16"
-              strokeDasharray="1313"
-              animate={{ strokeDashoffset: 1313 - (1313 * progress) / 100 }}
-              transition={{ duration: 1, ease: "linear" }}
-              className="text-foreground transition-all duration-300"
-              strokeLinecap="round"
-            />
-          </svg>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          <div className="text-center z-10">
-            <motion.div 
-              key={minutes + seconds}
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="text-[120px] font-black tracking-tighter tabular-nums leading-none mb-4"
-            >
-              {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-            </motion.div>
-            
-            <div className="flex justify-center gap-4">
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={toggleTimer}
-                className="w-24 h-24 rounded-full bg-foreground text-background flex items-center justify-center shadow-2xl shadow-foreground/20"
+        {/* ─── Left: Settings ─── */}
+        <div className="lg:col-span-1 space-y-5">
+          <div className="p-6 rounded-3xl border border-border bg-card shadow-sm space-y-6">
+            <h3 className="text-lg font-black flex items-center gap-2">
+              <TimerIcon className="w-5 h-5 text-foreground/60" />
+              Timer Settings
+            </h3>
+
+            {/* Mode toggle */}
+            <div className="flex bg-muted p-1 rounded-2xl">
+              {['countdown', 'stopwatch'].map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => {
+                    if (isActive) return;
+                    setTimerMode(mode);
+                    setSuccessMsg('');
+                    setErrorMsg('');
+                    // Reset whichever we're switching away from
+                    if (mode === 'countdown') {
+                      countdownRef.current = presetMinutes * 60;
+                      setCountdownDisplay(presetMinutes * 60);
+                    } else {
+                      stopwatchRef.current = 0;
+                      setStopwatchDisplay(0);
+                    }
+                  }}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${
+                    timerMode === mode
+                      ? 'bg-card text-foreground shadow-sm'
+                      : 'text-foreground/40 hover:text-foreground'
+                  } ${isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {mode === 'countdown' ? 'Countdown' : 'Stopwatch'}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-wider text-foreground/40 flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5" />
+                Category
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full p-3 rounded-xl border border-border bg-muted focus:ring-2 focus:ring-foreground outline-none font-bold text-sm cursor-pointer"
               >
-                {isActive ? <Pause className="w-10 h-10 fill-current" /> : <Play className="w-10 h-10 ml-2 fill-current" />}
-              </motion.button>
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={resetTimer}
-                className="w-24 h-24 rounded-full border-2 border-border flex items-center justify-center hover:bg-muted transition-colors"
-              >
-                <RotateCcw className="w-8 h-8" />
-              </motion.button>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Countdown presets */}
+            {timerMode === 'countdown' && (
+              <div className="space-y-4 pt-2 border-t border-border/50">
+                <label className="text-[10px] font-black uppercase tracking-wider text-foreground/40 block">
+                  Preset Durations
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[15, 25, 45, 60].map(mins => (
+                    <button
+                      key={mins}
+                      onClick={() => changePreset(mins)}
+                      disabled={isActive}
+                      className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 ${
+                        presetMinutes === mins
+                          ? 'border-foreground bg-foreground text-background font-black shadow-md'
+                          : 'border-border hover:bg-muted text-foreground/70'
+                      }`}
+                    >
+                      {mins}m
+                    </button>
+                  ))}
+                </div>
+
+                <form onSubmit={handleCustomTimeSubmit} className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-foreground/40 block">
+                    Custom (max 480 min)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={customMinInput}
+                      onChange={(e) => setCustomMinInput(e.target.value)}
+                      placeholder="e.g. 90"
+                      min="1"
+                      max="480"
+                      disabled={isActive}
+                      className="flex-1 px-3 py-2 rounded-xl border border-border bg-muted text-xs font-bold focus:ring-2 focus:ring-foreground outline-none disabled:opacity-50"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isActive || !customMinInput}
+                      className="px-4 py-2 bg-foreground text-background rounded-xl text-xs font-black hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+                    >
+                      Set
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </div>
+
+          {/* Current session info */}
+          <div className="p-4 rounded-2xl border border-border bg-muted/30 space-y-1.5 text-xs">
+            <div className="flex justify-between items-center font-bold text-foreground/50 uppercase tracking-wider text-[10px]">
+              <span>Mode</span>
+              <span className="text-foreground font-black capitalize">{timerMode}</span>
+            </div>
+            <div className="flex justify-between items-center font-bold text-foreground/50 uppercase tracking-wider text-[10px]">
+              <span>Category</span>
+              <span className="text-foreground font-black truncate max-w-[120px]">{selectedCategory}</span>
+            </div>
+            <div className="flex justify-between items-center font-bold text-foreground/50 uppercase tracking-wider text-[10px]">
+              <span>Status</span>
+              <span className={`font-black ${isActive ? 'text-green-500' : 'text-foreground/40'}`}>
+                {isActive ? '● Running' : '○ Paused'}
+              </span>
             </div>
           </div>
         </div>
+
+        {/* ─── Right: Circular Timer ─── */}
+        <div className="lg:col-span-2 flex flex-col items-center justify-center p-8 rounded-[2.5rem] border border-border bg-card shadow-lg relative min-h-[520px]">
+
+          {/* Notifications */}
+          <AnimatePresence>
+            {(successMsg || errorMsg) && (
+              <motion.div
+                key="notif"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className={`absolute top-6 left-6 right-6 p-3.5 rounded-2xl text-xs font-bold border text-center ${
+                  successMsg
+                    ? 'bg-green-500/10 border-green-500/20 text-green-700 dark:text-green-400'
+                    : 'bg-red-500/10 border-red-500/20 text-red-500'
+                }`}
+              >
+                {successMsg || errorMsg}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Ring + time display */}
+          <div className="flex flex-col items-center justify-center pt-4">
+            <div className="w-[300px] h-[300px] rounded-full border-[12px] border-muted flex items-center justify-center relative">
+              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 300 300">
+                <circle
+                  cx="150" cy="150" r="139"
+                  fill="transparent"
+                  stroke={timerMode === 'countdown' ? '#22c55e' : '#3b82f6'}
+                  strokeWidth="12"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={dashOffset}
+                  strokeLinecap="round"
+                  style={{ transition: 'stroke-dashoffset 0.9s linear' }}
+                />
+              </svg>
+
+              <div className="text-center z-10 select-none">
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/30 mb-2">
+                  {timerMode === 'countdown' ? `${presetMinutes}m Focus` : 'Elapsed Time'}
+                </div>
+                <div className="text-5xl font-black tracking-tighter tabular-nums leading-none mb-6 text-foreground">
+                  {timerMode === 'countdown'
+                    ? formatTime(countdownDisplay)
+                    : formatTime(stopwatchDisplay)}
+                </div>
+                <div className="flex justify-center gap-3">
+                  <motion.button
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.94 }}
+                    onClick={toggleTimer}
+                    className="w-14 h-14 rounded-full bg-foreground text-background flex items-center justify-center shadow-xl shadow-foreground/15 cursor-pointer"
+                  >
+                    {isActive
+                      ? <Pause className="w-5 h-5 fill-current" />
+                      : <Play className="w-5 h-5 ml-1 fill-current" />}
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.94 }}
+                    onClick={resetTimer}
+                    className="w-14 h-14 rounded-full border border-border flex items-center justify-center hover:bg-muted transition-colors cursor-pointer text-foreground/50 hover:text-foreground"
+                    title="Reset timer"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                  </motion.button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Stopwatch: stop & save */}
+          {timerMode === 'stopwatch' && stopwatchDisplay > 0 && (
+            <motion.button
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={handleStopAndSave}
+              disabled={isSaving}
+              className="mt-8 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-black rounded-2xl text-xs uppercase tracking-widest transition-colors flex items-center gap-2 shadow-lg cursor-pointer disabled:opacity-60"
+            >
+              {isSaving
+                ? <><div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Saving...</>
+                : <><Save className="w-4 h-4" /> Stop &amp; Log Session</>}
+            </motion.button>
+          )}
+
+          {/* Countdown: manual early save */}
+          {timerMode === 'countdown' && !isActive && countdownDisplay < totalDurationRef.current && countdownDisplay > 0 && (
+            <motion.button
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={async () => {
+                const elapsed = totalDurationRef.current - countdownDisplay;
+                const mins = Math.max(1, Math.round(elapsed / 60));
+                await saveSession(mins, 'Countdown');
+                changePreset(presetMinutes);
+              }}
+              disabled={isSaving}
+              className="mt-6 px-5 py-2.5 border border-green-500/40 text-green-600 dark:text-green-400 rounded-xl text-xs font-bold hover:bg-green-500/10 transition-colors cursor-pointer disabled:opacity-60 flex items-center gap-1.5"
+            >
+              <Save className="w-3.5 h-3.5" />
+              Save partial session ({Math.max(1, Math.round((totalDurationRef.current - countdownDisplay) / 60))}m studied)
+            </motion.button>
+          )}
+
+          {/* Category label */}
+          <p className="mt-5 text-[11px] text-foreground/35 font-bold uppercase tracking-widest flex items-center gap-1.5">
+            <BookOpen className="w-3.5 h-3.5" />
+            Studying: {selectedCategory}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-16 flex gap-12">
-        {[
-          { label: 'Completed', value: sessions, icon: CheckCircle },
-          { label: 'Intensity', value: 'High', icon: TrendingUp },
-          { label: 'Efficiency', value: '94%', icon: Zap },
-        ].map((stat, i) => (
-          <div key={i} className="flex flex-col items-center">
-            <div className="text-2xl font-black mb-1">{stat.value}</div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-foreground/40">{stat.label}</div>
+      {/* ─── Recent Sessions ─── */}
+      <div className="p-8 rounded-[2.5rem] border border-border bg-card shadow-sm space-y-6">
+        <h3 className="text-xl font-black flex items-center gap-2">
+          <Zap className="w-5 h-5 text-yellow-500 fill-current" />
+          Recent Sessions
+        </h3>
+
+        {loadingStats ? (
+          <div className="flex justify-center py-6">
+            <div className="w-6 h-6 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
           </div>
-        ))}
+        ) : recentSessions.length === 0 ? (
+          <div className="text-center text-foreground/40 text-sm py-6">
+            No sessions logged yet. Start the timer and study!
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {recentSessions.slice(0, 6).map((session) => (
+              <div
+                key={session._id}
+                className="p-4 rounded-2xl border border-border bg-muted/20 flex items-center justify-between gap-4"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-xl bg-foreground/5 flex items-center justify-center text-sm font-black shrink-0">
+                    {(session.category || 'S').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm truncate">{session.category || 'Study'}</div>
+                    <div className="text-[10px] text-foreground/40 font-bold uppercase tracking-wider">
+                      {new Date(session.date).toLocaleDateString([], { month: 'short', day: 'numeric' })} · {new Date(session.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs font-black bg-background border border-border px-3 py-1.5 rounded-xl shrink-0">
+                  <Clock className="w-3.5 h-3.5 opacity-40" />
+                  {session.duration >= 60
+                    ? `${Math.floor(session.duration / 60)}h ${session.duration % 60}m`
+                    : `${session.duration}m`}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Total totals */}
+        {recentSessions.length > 0 && (
+          <div className="pt-4 border-t border-border flex items-center justify-between">
+            <span className="text-xs font-black text-foreground/40 uppercase tracking-widest">Total Recorded (All Time)</span>
+            <span className="text-lg font-black">
+              {(() => {
+                const total = recentSessions.reduce((a, s) => a + s.duration, 0);
+                const h = Math.floor(total / 60);
+                const m = total % 60;
+                return h > 0 ? `${h}h ${m}m` : `${m}m`;
+              })()}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
 };
-
-const CheckCircle = ({ className }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-  </svg>
-);
-
-const TrendingUp = ({ className }) => (
-  <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
-  </svg>
-);
 
 export default Pomodoro;

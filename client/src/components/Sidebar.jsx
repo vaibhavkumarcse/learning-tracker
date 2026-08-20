@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LayoutDashboard, CheckSquare, Calendar, BarChart3, BookOpen, Timer, Zap, Sun, Moon, LogOut, Target, ClipboardList, User } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Calendar, BarChart3, Timer, Zap, Sun, Moon, LogOut, Target } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,8 +13,6 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
     { id: 'tasks', label: 'Tasks', icon: CheckSquare },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'goals', label: 'Goals', icon: Target },
-    { id: 'subjects', label: 'Subjects', icon: BookOpen },
-    { id: 'studylog', label: 'Study Log', icon: ClipboardList },
     { id: 'pomodoro', label: 'Timer', icon: Timer },
     { id: 'progress', label: 'Progress', icon: BarChart3 },
   ];

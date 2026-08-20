@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     avatar: { type: String },
+    darkMode: { type: Boolean, default: false },
     resetPasswordOTP: { type: String },
     resetPasswordOTPExpires: { type: Date }
 }, { timestamps: true });

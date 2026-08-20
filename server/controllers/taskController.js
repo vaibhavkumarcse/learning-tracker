@@ -3,7 +3,7 @@ const Activity = require('../models/Activity');
 
 exports.getTasks = async (req, res) => {
     try {
-        const tasks = await Task.find({ user: req.user._id }).populate('subject');
+        const tasks = await Task.find({ user: req.user._id });
         res.json(tasks);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -37,7 +37,7 @@ exports.updateTask = async (req, res) => {
                 await Activity.create({
                     type: 'task',
                     taskId: updatedTask._id,
-                    subject: updatedTask.subject,
+                    category: updatedTask.category,
                     user: req.user._id,
                     duration: 30 // Default 30 mins for a task completion
                 });

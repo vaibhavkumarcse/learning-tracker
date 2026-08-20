@@ -14,7 +14,7 @@ exports.register = async (req, res) => {
         await user.save();
 
         const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-        res.status(201).json({ token, user: { id: user._id, username, email } });
+        res.status(201).json({ token, user: { id: user._id, username, email, avatar: user.avatar, darkMode: user.darkMode } });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -29,7 +29,7 @@ exports.login = async (req, res) => {
         }
 
         const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
+        res.json({ token, user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, darkMode: user.darkMode } });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -87,7 +87,7 @@ exports.googleLogin = async (req, res) => {
         }
 
         const jwtToken = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token: jwtToken, user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar } });
+        res.json({ token: jwtToken, user: { id: user._id, username: user.username, email: user.email, avatar: user.avatar, darkMode: user.darkMode } });
     } catch (err) {
         console.error('Google login error:', err);
         res.status(401).json({ message: 'Google authentication failed' });
@@ -142,13 +142,14 @@ exports.resetPassword = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
     try {
-        const { username, email, avatar, currentPassword, newPassword } = req.body;
+        const { username, email, avatar, currentPassword, newPassword, darkMode } = req.body;
         const user = await User.findById(req.user.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         if (username) user.username = username;
         if (email) user.email = email;
         if (avatar) user.avatar = avatar;
+        if (darkMode !== undefined) user.darkMode = darkMode;
 
         if (newPassword) {
             if (!currentPassword) {
@@ -167,7 +168,8 @@ exports.updateProfile = async (req, res) => {
             id: user._id,
             username: user.username,
             email: user.email,
-            avatar: user.avatar
+            avatar: user.avatar,
+            darkMode: user.darkMode
         });
     } catch (err) {
         res.status(500).json({ message: err.message });

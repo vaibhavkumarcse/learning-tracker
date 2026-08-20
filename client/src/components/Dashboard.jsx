@@ -69,17 +69,9 @@ const Dashboard = () => {
           <motion.h2 variants={item} className="text-4xl font-black tracking-tight mb-2">Overview</motion.h2>
           <motion.p variants={item} className="text-foreground/50 font-medium">Your learning velocity is up <span className="text-foreground font-bold">12%</span> this week.</motion.p>
         </div>
-        <motion.div variants={item} className="flex gap-3">
-          <div className="flex -space-x-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="w-8 h-8 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[10px] font-bold">
-                {String.fromCharCode(64 + i)}
-              </div>
-            ))}
-          </div>
-          <button className="text-xs font-bold uppercase tracking-widest px-4 py-2 bg-muted rounded-lg hover:bg-border transition-colors">
-            Share Stats
-          </button>
+        <motion.div variants={item} className="text-right">
+          <div className="text-2xl font-black">{format(new Date(), 'MMMM d, yyyy')}</div>
+          <div className="text-sm font-bold text-foreground/50 uppercase tracking-widest">{format(new Date(), 'EEEE')}</div>
         </motion.div>
       </header>
 
@@ -160,16 +152,24 @@ const Dashboard = () => {
               const d = new Date();
               d.setDate(d.getDate() - (34 - i));
               const dayActivities = stats.activities.filter(a => isSameDay(new Date(a.date), d));
-              const count = dayActivities.length;
+              const totalMinutes = dayActivities.reduce((sum, act) => sum + (act.duration || 0), 0);
+              
+              const hours = Math.floor(totalMinutes / 60);
+              const mins = totalMinutes % 60;
+              let timeStr = "";
+              if (hours > 0) timeStr += `${hours}h `;
+              if (mins > 0 || hours === 0) timeStr += `${mins}m`;
+
+              const bgClass = totalMinutes > 240 ? 'bg-green-600 dark:bg-green-500' :
+                totalMinutes > 120 ? 'bg-green-500/80 dark:bg-green-500/70' :
+                totalMinutes > 60 ? 'bg-green-400/70 dark:bg-green-400/60' :
+                totalMinutes > 0 ? 'bg-green-300/60 dark:bg-green-400/30' : 'bg-muted';
+
               return (
                 <div 
                   key={i} 
-                  className={`aspect-square rounded-md transition-all hover:scale-110 cursor-pointer ${
-                    count > 4 ? 'bg-foreground' : 
-                    count > 2 ? 'bg-foreground/40' : 
-                    count > 0 ? 'bg-foreground/10' : 'bg-muted'
-                  }`}
-                  title={`${count} activities on ${format(d, 'MMM d')}`}
+                  className={`aspect-square rounded-md transition-all hover:scale-110 cursor-pointer ${bgClass}`}
+                  title={`${timeStr} studied on ${format(d, 'MMM d')}`}
                 />
               );
             })}
@@ -177,10 +177,11 @@ const Dashboard = () => {
           <div className="mt-8 flex items-center justify-between text-[10px] font-bold text-foreground/40 uppercase tracking-widest">
             <span>Less</span>
             <div className="flex gap-1">
-              <div className="w-2 h-2 rounded-sm bg-muted" />
-              <div className="w-2 h-2 rounded-sm bg-foreground/10" />
-              <div className="w-2 h-2 rounded-sm bg-foreground/40" />
-              <div className="w-2 h-2 rounded-sm bg-foreground" />
+              <div className="w-2 h-2 rounded-sm bg-muted" title="0 mins" />
+              <div className="w-2 h-2 rounded-sm bg-green-300/60" title="1-60 mins" />
+              <div className="w-2 h-2 rounded-sm bg-green-400/70" title="61-120 mins" />
+              <div className="w-2 h-2 rounded-sm bg-green-500/80" title="121-240 mins" />
+              <div className="w-2 h-2 rounded-sm bg-green-600" title=">240 mins" />
             </div>
             <span>More</span>
           </div>

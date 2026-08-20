@@ -18,3 +18,18 @@ exports.createSubject = async (req, res) => {
         res.status(400).json({ message: err.message });
     }
 };
+
+exports.deleteSubject = async (req, res) => {
+    try {
+        const deletedSubject = await Subject.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+        if (!deletedSubject) return res.status(404).json({ message: 'Subject not found' });
+        
+        // Also delete tasks associated with this subject
+        const Task = require('../models/Task');
+        await Task.deleteMany({ subject: req.params.id, user: req.user._id });
+        
+        res.json({ message: 'Subject and associated tasks deleted' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
