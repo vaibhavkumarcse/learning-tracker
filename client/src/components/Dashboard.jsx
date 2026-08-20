@@ -15,7 +15,7 @@ const Dashboard = () => {
   const getWeeklyActivity = () => {
     const days = eachDayOfInterval({ start: startOfWeek(new Date()), end: endOfWeek(new Date()) });
     return days.map(day => {
-      const dayActivities = stats.activities.filter(a => isSameDay(new Date(a.date), day));
+      const dayActivities = stats.activities.filter(a => isSameDay(new Date(a.date), day) && a.type === 'pomodoro');
       const mins = dayActivities.reduce((acc, a) => acc + (a.duration || 0), 0);
       return { name: format(day, 'EEE'), mins };
     });
