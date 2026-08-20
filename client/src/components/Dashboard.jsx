@@ -16,8 +16,8 @@ const Dashboard = () => {
     const days = eachDayOfInterval({ start: startOfWeek(new Date()), end: endOfWeek(new Date()) });
     return days.map(day => {
       const dayActivities = stats.activities.filter(a => isSameDay(new Date(a.date), day));
-      const hours = dayActivities.reduce((acc, a) => acc + (a.duration / 60), 0);
-      return { name: format(day, 'EEE'), hours: Number(hours.toFixed(1)) };
+      const mins = dayActivities.reduce((acc, a) => acc + (a.duration || 0), 0);
+      return { name: format(day, 'EEE'), mins };
     });
   };
 
@@ -86,8 +86,7 @@ const Dashboard = () => {
           <div className="flex justify-between items-center mb-10">
             <h3 className="text-xl font-black">Performance Analytics</h3>
             <div className="flex gap-2">
-              <button className="text-[10px] font-bold uppercase tracking-tighter px-3 py-1 bg-foreground text-background rounded-full">Hours</button>
-              <button className="text-[10px] font-bold uppercase tracking-tighter px-3 py-1 bg-muted rounded-full">Tasks</button>
+              <button className="text-[10px] font-bold uppercase tracking-tighter px-3 py-1 bg-foreground text-background rounded-full">Time Spent (mins)</button>
             </div>
           </div>
           <div className="h-[350px] w-full">
@@ -114,10 +113,11 @@ const Dashboard = () => {
                 />
                 <Tooltip 
                   contentStyle={{borderRadius: '20px', border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', padding: '20px'}}
+                  formatter={(value) => [`${value} mins`, "Time Spent"]}
                 />
                 <Area 
                   type="monotone" 
-                  dataKey="hours" 
+                  dataKey="mins" 
                   stroke="currentColor" 
                   strokeWidth={4}
                   fillOpacity={1} 

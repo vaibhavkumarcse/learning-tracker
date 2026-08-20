@@ -1,4 +1,5 @@
 const Goal = require('../models/Goal');
+const Activity = require('../models/Activity');
 
 exports.getGoals = async (req, res) => {
     try {
@@ -28,6 +29,24 @@ exports.updateGoal = async (req, res) => {
         );
         
         if (!updatedGoal) return res.status(404).json({ message: 'Goal not found' });
+
+        // Log activity if completed
+        if (req.body.status === 'completed') {
+            const existingActivity = await Activity.findOne({ goalId: updatedGoal._id, type: 'goal' });
+            if (!existingActivity) {
+                await Activity.create({
+                    type: 'goal',
+                    goalId: updatedGoal._id,
+                    category: 'Goal Completion',
+                    user: req.user._id,
+                    duration: 60 // Default 60 mins for a goal completion
+                });
+            }
+        } else if (req.body.status && req.body.status !== 'completed') {
+            // Remove activity if goal is unmarked as completed
+            await Activity.findOneAndDelete({ goalId: updatedGoal._id, type: 'goal' });
+        }
+
         res.json(updatedGoal);
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -38,6 +57,10 @@ exports.deleteGoal = async (req, res) => {
     try {
         const deletedGoal = await Goal.findOneAndDelete({ _id: req.params.id, user: req.user._id });
         if (!deletedGoal) return res.status(404).json({ message: 'Goal not found' });
+        
+        // Also delete associated activity
+        await Activity.findOneAndDelete({ goalId: req.params.id, type: 'goal' });
+        
         res.json({ message: 'Goal deleted' });
     } catch (err) {
         res.status(500).json({ message: err.message });

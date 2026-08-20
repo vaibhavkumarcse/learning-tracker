@@ -2,10 +2,11 @@ const mongoose = require('mongoose');
 
 const activitySchema = new mongoose.Schema({
     date: { type: Date, default: Date.now, required: true },
-    type: { type: String, enum: ['task', 'pomodoro', 'study_log'], required: true },
+    type: { type: String, enum: ['task', 'pomodoro', 'study_log', 'goal'], required: true },
     duration: { type: Number, default: 0 }, // minutes
     category: { type: String, default: 'Study' },
     taskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task' },
+    goalId: { type: mongoose.Schema.Types.ObjectId, ref: 'Goal' },
     notes: { type: String },
     topicsCovered: [{ type: String }],
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }

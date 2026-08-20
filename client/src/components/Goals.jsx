@@ -5,7 +5,7 @@ import * as api from '../services/api';
 import { useData } from '../context/DataContext';
 
 const Goals = () => {
-  const { goals, setGoals } = useData();
+  const { goals, setGoals, refreshStats } = useData();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -68,6 +68,7 @@ const Goals = () => {
     try {
       const { data } = await api.updateGoal(id, { status: nextStatus, completedAt });
       setGoals(prev => prev.map(g => g._id === id ? data : g));
+      refreshStats(); // Update stats in case an activity was created/removed
     } catch (err) {
       console.error('Failed to update goal status:', err);
       // Revert on failure
@@ -80,6 +81,7 @@ const Goals = () => {
     setGoals(prev => prev.filter(g => g._id !== id));
     try {
       await api.deleteGoal(id);
+      refreshStats(); // Update stats in case an activity was removed
     } catch (err) {
       console.error('Failed to delete goal:', err);
       // Restore on error
